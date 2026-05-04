@@ -5,7 +5,7 @@ import numpy as np
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from mem0 import Memory
-from ..config import ARK_MODEL, ARK_BASE_URL, ARK_API_KEY, EMBEDDING_NAME, EMBEDDING_SIZE, EMBEDDING_BASE_URL, EMBEDDING_API_KEY, LLM_TEMPERATURE, LLM_MAX_TOKENS
+from ..config import ARK_MODEL, ARK_BASE_URL, ARK_API_KEY, EMBEDDING_NAME, EMBEDDING_SIZE, EMBEDDING_BASE_URL, EMBEDDING_API_KEY, LLM_TEMPERATURE, LLM_MAX_TOKENS, QDRANT_URL
 from .schema_discovery import SchemaDiscovery
 from .utils import call_llm_with_retry
 from collections import defaultdict
@@ -38,14 +38,15 @@ class AdaptiveMemoryLayer:
         
         self.schema_discovery = SchemaDiscovery(llm_param_format=llm_param_format, enable_thinking=enable_thinking)
         
+        qdrant_url = QDRANT_URL.rstrip("/")
+
         # Initialize mem0 for storage
         config = {
             "vector_store": {
                 "provider": "qdrant",
                 "config": {
                     "collection_name": self.collection_name,
-                    "host": "localhost", 
-                    "port": 6333, 
+                    "url": qdrant_url,
                     "embedding_model_dims": EMBEDDING_SIZE
                 }
             },

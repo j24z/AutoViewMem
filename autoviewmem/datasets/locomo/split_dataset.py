@@ -1,43 +1,44 @@
+import argparse
 import json
+from pathlib import Path
 
-# 原始（已过滤）数据集
-in_file = "locomo.json"
 
-# 输出三个文件
-train_file = "locomo_train.json"
-val_file   = "locomo_val.json"
-test_file  = "locomo_test.json"
+def split_dataset(input_path, output_dir, train_size=1, val_size=1):
+    with open(input_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-with open(in_file, "r", encoding="utf-8") as f:
-    data = json.load(f)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-# 默认：第一个对话 -> 训练集
-#      第二个对话 -> 验证集
-#      其余对话   -> 测试集
-train_data = []
-val_data = []
-test_data = []
+    train_data = data[:train_size]
+    val_data = data[train_size:train_size + val_size]
+    test_data = data[train_size + val_size:]
 
-if len(data) >= 1:
-    train_data = [data[0]]
-if len(data) >= 2:
-    val_data = [data[1]]
-if len(data) > 2:
-    test_data = data[2:]
-else:
-    test_data = []
+    files = {
+        "train": output_dir / "locomo_train.json",
+        "val": output_dir / "locomo_val.json",
+        "test": output_dir / "locomo_test.json",
+    }
 
-# 写出三个文件
-with open(train_file, "w", encoding="utf-8") as f:
-    json.dump(train_data, f, ensure_ascii=False, indent=4)
+    for split, path in files.items():
+        payload = {"train": train_data, "val": val_data, "test": test_data}[split]
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
 
-with open(val_file, "w", encoding="utf-8") as f:
-    json.dump(val_data, f, ensure_ascii=False, indent=4)
+    print(f"Train conversations: {len(train_data)} -> {files['train']}")
+    print(f"Validation conversations: {len(val_data)} -> {files['val']}")
+    print(f"Test conversations: {len(test_data)} -> {files['test']}")
 
-with open(test_file, "w", encoding="utf-8") as f:
-    json.dump(test_data, f, ensure_ascii=False, indent=4)
 
-print("完成划分：")
-print("  训练集:", train_file)
-print("  验证集:", val_file)
-print("  测试集:", test_file)
+def main():
+    parser = argparse.ArgumentParser(description="Split LoCoMo conversations into train/validation/test files.")
+    parser.add_argument("--input", default="data/locomo/locomo.json", help="Filtered LoCoMo JSON path")
+    parser.add_argument("--output_dir", default="data/locomo", help="Directory for split files")
+    parser.add_argument("--train_size", type=int, default=1, help="Number of conversations in train split")
+    parser.add_argument("--val_size", type=int, default=1, help="Number of conversations in validation split")
+    args = parser.parse_args()
+    split_dataset(args.input, args.output_dir, args.train_size, args.val_size)
+
+
+if __name__ == "__main__":
+    main()

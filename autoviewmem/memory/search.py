@@ -27,7 +27,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 # Import configuration
-from autoviewmem.config import EMBEDDING_NAME, EMBEDDING_SIZE, LLM_TEMPERATURE, LLM_MAX_TOKENS
+from autoviewmem.config import COLLECTION_NAME, DATA_TEST_PATH, EMBEDDING_NAME, EMBEDDING_SIZE, LLM_TEMPERATURE, LLM_MAX_TOKENS, QDRANT_URL
 # Import answer prompt template
 from autoviewmem.evaluation.prompts import ANSWER_PROMPT
 # Import logger
@@ -41,11 +41,6 @@ OPENAI_API_KEY = os.getenv("ARK_API_KEY", "any")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "intfloat/e5-base-v2")
 EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "http://localhost:8000/v1")
 EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", "empty")
-
-logger.info(f"Using model: {MODEL_NAME}")
-logger.info(f"Using base URL: {OPENAI_BASE_URL}")
-logger.info(f"Using embedding model: {EMBEDDING_MODEL}")
-
 
 def _guess_thread_source(thread_name: str, stack: str) -> str:
     lowered = (thread_name + "\n" + stack).lower()
@@ -122,7 +117,7 @@ class BM25Index:
 
 
 class MultiLayerMemorySearch:
-    def __init__(self, output_path=None, top_k=15, routing_mode="llm", fixed_limits=None, l1_collection="autoviewmem_demo", n_adaptive_views=1, l1_view_limit=None, enable_view_routing=True, enable_cache=True, max_cache_users=1024, verbose=False):
+    def __init__(self, output_path=None, top_k=15, routing_mode="llm", fixed_limits=None, l1_collection=COLLECTION_NAME, n_adaptive_views=1, l1_view_limit=None, enable_view_routing=True, enable_cache=True, max_cache_users=1024, verbose=False):
         self.top_k = top_k
         self.verbose = verbose
         # Note: routing_mode, fixed_limits, n_adaptive_views, enable_view_routing are ignored in this version
@@ -151,9 +146,9 @@ class MultiLayerMemorySearch:
         )
         
         try:
-            self.qdrant_client = QdrantClient(url="http://localhost:6333", prefer_grpc=False)
+            self.qdrant_client = QdrantClient(url=QDRANT_URL, prefer_grpc=False)
         except TypeError:
-            self.qdrant_client = QdrantClient(url="http://localhost:6333")
+            self.qdrant_client = QdrantClient(url=QDRANT_URL)
         
         self.results = defaultdict(list)
         self.output_path = output_path if output_path else self._generate_output_path()
@@ -169,6 +164,8 @@ class MultiLayerMemorySearch:
         self._user_cache = OrderedDict()
         self._user_cache_events = {}
         
+        logger.info(f"Using model: {MODEL_NAME}")
+        logger.info(f"Using embedding model: {EMBEDDING_MODEL}")
         logger.info(f"Initialized Hybrid Search on collection: {self.collection_name}")
 
     def _extract_json(self, text: str) -> Optional[Dict[str, Any]]:
@@ -1244,10 +1241,10 @@ Return ONLY the JSON, no other text.
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Hybrid memory search (Vector + BM25) on Qdrant")
-    parser.add_argument("--input", default="data/locomo/locomo_train.json", help="Input dataset path")
+    parser.add_argument("--input", default=DATA_TEST_PATH, help="Input dataset path")
     parser.add_argument("--output", help="Output results path")
     parser.add_argument("--top_k", type=int, default=30, help="Number of memories to retrieve per speaker")
-    parser.add_argument("--l1_collection", default="adaptive_memory_layer_2_3_en_con", help="Qdrant collection name")
+    parser.add_argument("--l1_collection", default=COLLECTION_NAME, help="Qdrant collection name")
     parser.add_argument("--test_question", help="Run a single test question for debugging")
     parser.add_argument("--speaker_a", default="Melanie_0", help="Speaker A ID for test")
     parser.add_argument("--speaker_b", default="Caroline_0", help="Speaker B ID for test")

@@ -7,7 +7,6 @@ from collections import defaultdict
 import numpy as np
 from openai import OpenAI
 
-from mem0.memory.utils import extract_json
 from autoviewmem.config import LLM_TEMPERATURE, LLM_MAX_TOKENS
 # from config import MODEL_NAME
 
@@ -23,6 +22,14 @@ client = OpenAI(
     base_url=ARK_BASE_URL,
     api_key=ARK_API_KEY,
 )
+
+
+def extract_json(text):
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return text
+    return text[start:end + 1]
 
 
 ACCURACY_PROMPT = """

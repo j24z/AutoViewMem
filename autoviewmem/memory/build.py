@@ -16,7 +16,7 @@ import networkx as nx
 import random# Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from autoviewmem.config import DATA_TRAIN_PATH, DATA_PATH
+from autoviewmem.config import COLLECTION_NAME, DATA_TRAIN_PATH
 from autoviewmem.memory.adaptive.adaptive_ingestion import AdaptiveMemoryLayer
 from autoviewmem.memory.log_config import logger
 
@@ -881,7 +881,8 @@ def main():
     parser.add_argument("--no_force", action="store_false", dest="force", help="Skip force re-run")
     parser.add_argument("--use_existing_views", type=lambda x: str(x).lower() in ("1", "true", "yes", "y"), default=False, help="Load adaptive_views.json and skip view regeneration when available (default: False). Accepts true/false")
     parser.add_argument("--no_dpp", action="store_false", dest="use_dpp", default=True, help="Disable DPP for view selection")
-    parser.add_argument("--collection_name", type=str, default="automem_5_4_train_8B", help="Qdrant collection name (default: adaptive_memory_layer_1_29)")
+    parser.add_argument("--input", type=str, default=DATA_TRAIN_PATH, help="Input dataset path")
+    parser.add_argument("--collection_name", type=str, default=COLLECTION_NAME, help="Qdrant collection name")
     parser.add_argument("--no_consolidation", action="store_false", dest="enable_consolidation", default=False, 
                         help="Disable consolidation during extraction (default: True)")
     parser.add_argument("--llm_param_format", type=str, default="vllm", choices=["vllm", "openai"], help="LLM 参数格式：vllm=extra_body+开启思考；openai=response_format JSON 约束 + reasoning_effort=none")
@@ -911,7 +912,7 @@ def main():
     # Configuration
     # Load data if we are running discovery or extraction (Phases 1-3)
     should_load_data = run_discovery or run_extract
-    data_path = "data/locomo/locomo_train.json" if should_load_data else None
+    data_path = args.input if should_load_data else None
     
     debug = bool(args.test)
     if args.test:
