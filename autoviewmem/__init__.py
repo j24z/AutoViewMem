@@ -1,2 +1,0 @@
-"""AutoViewMem research code."""
-
